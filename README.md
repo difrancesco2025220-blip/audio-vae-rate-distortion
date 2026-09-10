@@ -1,173 +1,192 @@
-# Rate–Distortion e stocasticità latente nei VAE audio
+# Rate-Distortion and Latent Stochasticity in Audio VAEs
 
-Progetto individuale per **Deep Learning and Applied AI 2026**.
+Final project for the course **Deep Learning and Applied AI 2026**, Sapienza University of Rome.
 
-## Domanda di ricerca
+## Research question
 
-Studiamo come la riduzione del Rate di un Variational Autoencoder audio influenzi
-la sensibilità della ricostruzione alla stocasticità del posterior.
+This project investigates how reducing the Rate of an audio Variational Autoencoder (VAE) affects reconstruction sensitivity to posterior stochasticity.
 
-Il VAE usa
+The approximate posterior is:
 
-\[
-q_\phi(z|x)=\mathcal N(\mu,\mathrm{diag}(\sigma^2))
-\]
+qφ(z|x) = N(μ(x), diag(σ²(x)))
 
-e l'obiettivo
+and the β-VAE objective is:
 
-\[
-\mathcal L_\beta = D + \beta R,
-\qquad
-R = \mathbb E_x KL(q_\phi(z|x)\|p(z)).
-\]
+Lβ = D + βR
 
-Confrontiamo
+where:
 
-\[
-D_\mu
-\]
+R = Ex KL(qφ(z|x) || p(z))
 
-con la distorsione sotto vero sampling
+The Rate R represents the information cost of the latent representation.
 
-\[
-D_{\mathrm{sample}}
-\]
+We compare reconstruction using the posterior mean:
 
-e definiamo
+Dμ = d(x, gθ(μ))
 
-\[
-G_{\mathrm{stoch}}=D_{\mathrm{sample}}-D_\mu.
-\]
+with the expected distortion under posterior sampling:
 
-Il risultato principale osservato è:
+Dsample = Ez~qφ(z|x) [d(x, gθ(z))]
 
-\[
-R\downarrow
-\quad\Rightarrow\quad
-\bar\sigma\uparrow
-\quad\Rightarrow\quad
-G_{\mathrm{stoch}}\uparrow.
-\]
+and define the stochasticity gap:
 
-Per isolare direttamente la stocasticità usiamo inoltre
+Gstoch = Dsample − Dμ
 
-\[
-z_\tau=\mu+\tau\sigma\epsilon
-\]
+The main empirical observation is that, as the Rate decreases, posterior uncertainty increases and the stochasticity gap becomes substantially larger.
 
-e troviamo localmente
+## Controlled latent perturbations
 
-\[
-\mathbb E\|g(z_\tau)-g(\mu)\|^2 \approx c\tau^2,
-\]
+To study latent stochasticity directly, we introduce the perturbation
 
-con un coefficiente \(c\) che cresce fortemente nei regimi a basso Rate.
+zτ = μ + τσ ⊙ ε
+
+with:
+
+ε ~ N(0, I)
+
+and τ controlling the magnitude of the stochastic perturbation.
+
+In latent space, the following relation holds exactly:
+
+E||zτ − μ||² = τ² Σi σi²
+
+For small perturbations, a local linearization of the decoder predicts approximately:
+
+E||gθ(zτ) − gθ(μ)||² ≈ c τ²
+
+where c measures local decoder sensitivity to posterior stochasticity.
+
+For τ ≤ 1, the quadratic approximation fits the experimental results extremely well, with R² > 0.998 for all analyzed regimes.
+
+The sensitivity coefficient c increases strongly as the Rate decreases.
 
 ## Dataset
 
-**Free Spoken Digit Dataset (FSDD) v1.0.10**
+We use the **Free Spoken Digit Dataset (FSDD) v1.0.10**.
 
-- 3000 file WAV;
-- 8 kHz;
-- cifre pronunciate da più speaker;
-- split del progetto: indici `0–4` test, `5–49` training;
-- 2700 esempi di training e 300 di test.
+Main characteristics:
 
-Il dataset viene scaricato automaticamente dal notebook `00_prepare_data.ipynb`
-e non è incluso nel repository.
+- 3000 WAV recordings
+- sampling rate: 8 kHz
+- spoken digits from multiple speakers
+- 2700 training samples
+- 300 test samples
+- indices 0–4 are used for testing
+- indices 5–49 are used for training
 
-## Ordine di esecuzione
+Audio signals are corrupted with Gaussian noise with standard deviation 0.05 and transformed into 128 × 128 log-STFT representations.
+
+The dataset is downloaded automatically by `00_prepare_data.ipynb` and is not included in the repository.
+
+## Model and training strategy
+
+A convolutional VAE with latent dimension 128 is used.
+
+Direct VAE training produced poor reconstructions, so the final pipeline uses two stages:
+
+1. pre-training of a deterministic convolutional autoencoder;
+2. transfer of its weights to the VAE, followed by gradual variational fine-tuning.
+
+The rate-distortion analysis is performed over several values of β between 0 and 10⁻².
+
+## Execution order
 
 1. `00_prepare_data.ipynb`  
-   Download e controllo di FSDD.
+   Downloads and prepares the FSDD dataset.
 
 2. `01_autoencoder_stft.ipynb`  
-   Autoencoder deterministico in log-STFT. Salva `checkpoints/stft_autoencoder.pt`.
+   Pre-trains the deterministic log-STFT autoencoder.
 
 3. `02_rate_distortion.ipynb`  
-   Addestra tutti i VAE sulla griglia di β e salva i checkpoint.
+   Trains the VAE models over the β grid and evaluates the rate-distortion trade-off.
 
 4. `03_sampling_and_audio_metrics.ipynb`  
-   Calcola \(D_\mu\), \(D_{\mathrm{sample}}\), stochasticity gap e metriche audio.
+   Compares reconstruction using z = μ with reconstruction under posterior sampling and computes audio metrics.
 
 5. `04_latent_analysis.ipynb`  
-   KL per dimensione, dimensionalità effettiva, \(\sigma\) e analisi del posterior.
+   Analyzes KL divergence per latent dimension, effective dimensionality, posterior mean and posterior standard deviation.
 
 6. `05_tau_stochasticity.ipynb`  
-   Sweep di \(\tau\) e fit quadratico della sensibilità del decoder.
+   Performs the controlled τ perturbation experiment and fits the local quadratic sensitivity law.
 
 7. `06_seed_robustness.ipynb`  
-   Robustezza su tre seed del fine-tuning VAE.
+   Repeats VAE fine-tuning with three random seeds to evaluate robustness of the main trends.
 
-## Struttura
+## Main results
 
-```text
-.
-├── 00_prepare_data.ipynb
-├── 01_autoencoder_stft.ipynb
-├── 02_rate_distortion.ipynb
-├── 03_sampling_and_audio_metrics.ipynb
-├── 04_latent_analysis.ipynb
-├── 05_tau_stochasticity.ipynb
-├── 06_seed_robustness.ipynb
-├── results/
-│   └── reference_*.csv
-├── report/
-│   ├── main.tex
-│   ├── main.pdf
-│   ├── references.bib
-│   ├── dlaiml2026.sty
-│   └── figures/
-├── requirements.txt
-└── .gitignore
-```
-
-## Risultati di riferimento
-
-I CSV `results/reference_*.csv` contengono i numeri utilizzati nel report finale.
-Sono forniti come riferimento per confrontare una nuova esecuzione del codice.
-
-Valori chiave:
-
-| β | Rate | D_mu | D_sample | Gap |
+| β | Rate | Dμ | Dsample | Gstoch |
 |---:|---:|---:|---:|---:|
 | 1e-4 | 338.12 | 0.2494 | 0.2535 | 0.0041 |
-| 1e-3 | 122.39 | 0.2592 | 0.2983 | 0.0391 |
+| 1e-3 | 122.49 | 0.2591 | 0.2982 | 0.0391 |
 | 1e-2 | 33.74 | 0.3220 | 0.4917 | 0.1697 |
 
-Nello sweep in \(\tau\), per \(\tau\le1\), i fit di
-\(\mathbb E\|g(z_\tau)-g(\mu)\|^2 \approx c\tau^2\)
-hanno \(R^2>0.998\).
+The main trend is:
 
-## Riproducibilità
+**lower Rate → larger posterior uncertainty → larger stochasticity gap**
 
-I notebook fissano i seed quando possibile. La verifica multi-seed riguarda
-il fine-tuning VAE a partire dallo **stesso autoencoder pre-addestrato**:
-non è un retraining indipendente dell'intera pipeline.
+The mean posterior standard deviation increases from approximately 0.229 at β = 10⁻⁴ to 0.771 at β = 10⁻².
 
-I checkpoint e il dataset non sono versionati in Git perché possono essere rigenerati.
+At the same time, the stochasticity gap increases from approximately 0.0041 to 0.1697.
 
-## Ambiente
+All 128 latent dimensions remain active under the threshold KLi > 0.01, while effective dimensionality decreases only moderately. Therefore, the reduction in Rate is not mainly explained by complete latent-coordinate shutdown.
 
-Testato con Python 3.12. Installazione:
+## τ-sensitivity results
 
-```bash
-python -m venv .venv
-.venv\Scripts\activate
-python -m pip install --upgrade pip
-pip install -r requirements.txt
-```
+For τ ≤ 1, the decoder output displacement is approximately quadratic in τ.
 
-Su Linux/macOS:
+The fitted sensitivity coefficient c increases as the Rate decreases:
 
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install --upgrade pip
-pip install -r requirements.txt
-```
+| β | Rate | c | R² |
+|---:|---:|---:|---:|
+| 1e-4 | 338.12 | 0.0045 | > 0.999 |
+| 3e-4 | 222.94 | 0.0129 | > 0.999 |
+| 1e-3 | 122.49 | 0.0409 | > 0.999 |
+| 1e-2 | 33.74 | 0.1843 | > 0.998 |
+
+This result is consistent with the VAE reparameterization mechanism: models operating at lower Rate show stronger sensitivity to latent stochastic perturbations.
+
+## Robustness
+
+The main trend remains stable across three different VAE fine-tuning seeds.
+
+The three runs always start from the same pre-trained deterministic autoencoder, so the robustness analysis concerns VAE fine-tuning rather than the complete training pipeline.
+
+The observed association between posterior uncertainty and stochasticity gap should be interpreted as a strong empirical association consistent with the reparameterization mechanism, rather than as isolated causal evidence.
+
+## Repository structure
+
+- `00_prepare_data.ipynb` — dataset preparation
+- `01_autoencoder_stft.ipynb` — deterministic autoencoder
+- `02_rate_distortion.ipynb` — rate-distortion analysis
+- `03_sampling_and_audio_metrics.ipynb` — posterior sampling and audio metrics
+- `04_latent_analysis.ipynb` — latent-space analysis
+- `05_tau_stochasticity.ipynb` — controlled τ perturbations
+- `06_seed_robustness.ipynb` — robustness across random seeds
+- `results/` — numerical outputs from the final experiments
+- `report/` — final report, bibliography and report figures
+- `requirements.txt` — Python dependencies
+- `.gitignore` — excluded datasets, checkpoints and temporary files
+
+## Reproducibility
+
+The notebooks use fixed random seeds whenever possible.
+
+The dataset and trained model checkpoints are not stored in the repository because they can be regenerated by running the notebooks in order.
+
+Final numerical outputs used for the analysis are available in the `results/` directory.
+
+## Environment
+
+Tested with **Python 3.12**.
+
+Install the required dependencies with:
+
+`python -m venv .venv`
+
+`pip install --upgrade pip`
+
+`pip install -r requirements.txt`
 
 ## Report
 
-La cartella `report/` contiene il report nel **template ufficiale DLAI 2026**,
-insieme alle figure e alla bibliografia.
+The `report/` directory contains the final project report written using the official **DLAI 2026** template, together with the bibliography and all figures used in the report.
