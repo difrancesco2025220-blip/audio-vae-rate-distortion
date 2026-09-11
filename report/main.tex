@@ -68,12 +68,12 @@ Here, $G_{\mathrm{stoch}}$ measures the additional distortion introduced by late
 \section*{Experimental setup}
 We use the Free Spoken Digit Dataset (FSDD) \citep{fsdd}, with 2700 training and 300 test samples at 8 kHz. Audio signals are corrupted with Gaussian noise ($\sigma_n=0.05$), converted to $128\times128$ log-STFT representations, and reconstructed using a convolutional VAE with latent dimension 128. We evaluate reconstruction using weighted log-STFT MSE, MSE, SNR, and LogMelMAE over the active speech region.
 
-Because direct VAE training produced poor reconstructions, we first pre-trained a deterministic autoencoder and transferred its weights to the VAE, gradually introducing sampling and KL regularization. For $\beta\in[0,10^{-2}]$, $D_{\mathrm{sample}}$ is estimated with 10 Monte Carlo samples. Code: \texttt{https://github.com/difrancesco2025220-blip/audio-vae-rate-distortion}.
+Because direct VAE training produced poor reconstructions, we first pre-trained a deterministic autoencoder and transferred its weights to the VAE, gradually introducing sampling and KL regularization. For $\beta\in[0,10^{-2}]$, $D_{\mathrm{sample}}$ is estimated with 10 Monte Carlo samples. Code: \href{https://github.com/difrancesco2025220-blip/audio-vae-rate-distortion}{GitHub repository}.
 
 % ------------------------------------------------------------------------------
 \section*{Rate--distortion and stochasticity gap}
 
-Figure~\ref{fig:rd} shows that $D_\mu$ and $D_{\mathrm{sample}}$ are nearly identical at high Rate but separate rapidly as the Rate decreases. At $\beta=10^{-4}$ we obtain $(R,G_{\mathrm{stoch}})=(338.1,0.0041)$; at $\beta=10^{-3}$, $(122.4,0.0391)$; and at $\beta=10^{-2}$, $(33.7,0.1697)$. The transition is especially clear between $\beta=3\cdot10^{-4}$ and $10^{-3}$.
+Figure~\ref{fig:rd} shows that $D_\mu$ and $D_{\mathrm{sample}}$ are nearly identical at high Rate but separate rapidly as the Rate decreases. At $\beta=10^{-4}$ we obtain $(R,G_{\mathrm{stoch}})=(338.1,0.0041)$; at $\beta=10^{-3}$, $(122.5,0.0391)$; and at $\beta=10^{-2}$, $(33.7,0.1697)$. The transition is especially clear between $\beta=3\cdot10^{-4}$ and $10^{-3}$.
 
 Audio metrics confirm the same trend. At $\beta=10^{-3}$, sampling increases MSE from $5.10\cdot10^{-4}$ to $5.81\cdot10^{-4}$, decreases SNR from $5.53$ to $5.00$ dB, and increases LogMelMAE from $7.19$ to $7.64$. The degradation is stronger at $\beta=10^{-2}$.
 
@@ -177,7 +177,7 @@ J_{g_\theta}(\mu)\,
 \right],
 \end{equation}
 
-so $c$ reflects both posterior uncertainty and local decoder sensitivity. The clearest transition occurs around $R\simeq223\rightarrow122$ nats/audio. Independent audio metrics show the same behavior, supporting that the effect is not specific to the weighted log-STFT loss.
+so $c$ reflects both posterior uncertainty and local decoder sensitivity. The clearest transition occurs between $R\simeq223$ and $122$ nats/audio. Independent audio metrics show the same behavior, supporting the conclusion that the effect is not specific to the weighted log-STFT loss.
 
 \clearpage
 
