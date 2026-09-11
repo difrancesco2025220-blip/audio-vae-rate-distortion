@@ -8,51 +8,97 @@ This project investigates how reducing the Rate of an audio Variational Autoenco
 
 The approximate posterior is:
 
-qφ(z|x) = N(μ(x), diag(σ²(x)))
+```math
+q_\phi(z|x)
+=
+\mathcal{N}\!\left(
+\mu(x),
+\mathrm{diag}(\sigma^2(x))
+\right)
+```
 
 and the β-VAE objective is:
 
-Lβ = D + βR
+```math
+\mathcal{L}_\beta = D + \beta R
+```
 
 where:
 
-R = Ex KL(qφ(z|x) || p(z))
+```math
+R =
+\mathbb{E}_x\,
+\mathrm{KL}\!\left(
+q_\phi(z|x)\,\|\,p(z)
+\right)
+```
 
 The Rate R represents the information cost of the latent representation.
 
 We compare reconstruction using the posterior mean:
 
-Dμ = d(x, gθ(μ))
+```math
+D_\mu
+=
+d\!\left(x,g_\theta(\mu)\right)
+```
 
 with the expected distortion under posterior sampling:
 
-Dsample = Ez~qφ(z|x) [d(x, gθ(z))]
+```math
+D_{\mathrm{sample}}
+=
+\mathbb{E}_{z\sim q_\phi(z|x)}
+\left[
+d\!\left(x,g_\theta(z)\right)
+\right]
+```
 
 and define the stochasticity gap:
 
-Gstoch = Dsample − Dμ
+```math
+G_{\mathrm{stoch}}
+=
+D_{\mathrm{sample}}-D_\mu
+```
 
 The main empirical observation is that, as the Rate decreases, posterior uncertainty increases and the stochasticity gap becomes substantially larger.
 
 ## Controlled latent perturbations
 
-To study latent stochasticity directly, we introduce the perturbation
+To study latent stochasticity directly, we introduce the perturbation:
 
-zτ = μ + τσ ⊙ ε
+```math
+z_\tau
+=
+\mu+\tau\,\sigma\odot\epsilon,
+\qquad
+\epsilon\sim\mathcal{N}(0,I)
+```
 
-with:
-
-ε ~ N(0, I)
-
-and τ controlling the magnitude of the stochastic perturbation.
+where τ controls the magnitude of the stochastic perturbation.
 
 In latent space, the following relation holds exactly:
 
-E||zτ − μ||² = τ² Σi σi²
+```math
+\mathbb{E}
+\left[
+\|z_\tau-\mu\|^2
+\right]
+=
+\tau^2\sum_i\sigma_i^2
+```
 
 For small perturbations, a local linearization of the decoder predicts approximately:
 
-E||gθ(zτ) − gθ(μ)||² ≈ c τ²
+```math
+\mathbb{E}
+\left[
+\|g_\theta(z_\tau)-g_\theta(\mu)\|^2
+\right]
+\approx
+c\,\tau^2
+```
 
 where c measures local decoder sensitivity to posterior stochasticity.
 
@@ -128,7 +174,7 @@ The mean posterior standard deviation increases from approximately 0.229 at β =
 
 At the same time, the stochasticity gap increases from approximately 0.0041 to 0.1697.
 
-All 128 latent dimensions remain active under the threshold KLi > 0.01, while effective dimensionality decreases only moderately. Therefore, the reduction in Rate is not mainly explained by complete latent-coordinate shutdown.
+All 128 latent dimensions remain active under the threshold KLᵢ > 0.01, while effective dimensionality decreases only moderately. Therefore, the reduction in Rate is not mainly explained by complete latent-coordinate shutdown.
 
 ## τ-sensitivity results
 
@@ -181,11 +227,11 @@ Tested with **Python 3.12**.
 
 Install the required dependencies with:
 
-`python -m venv .venv`
-
-`pip install --upgrade pip`
-
-`pip install -r requirements.txt`
+```bash
+python -m venv .venv
+pip install --upgrade pip
+pip install -r requirements.txt
+```
 
 ## Report
 
